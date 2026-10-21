@@ -251,3 +251,31 @@ dialog::backdrop { background: rgb(0 0 0 / 35%); }
   .answers { grid-template-columns: repeat(3, 1fr); }
   .answer { padding: 12px 4px; font-size: 0.95rem; }
 }
+
+/* Sound colour groups */
+.group-rau { --group: #c92a2a; --group-soft: #ffe8e8; }
+.group-suess { --group: #b5338a; --group-soft: #fdeaf6; }
+.group-hohl { --group: #1971c2; --group-soft: #e3f0fc; }
+.group-gespannt { --group: #b07d00; --group-soft: #fff4d6; }
+.badge {
+  display: inline-block;
+  background: var(--group-soft);
+  color: var(--group);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.colour { font-size: 0.95rem; }
+.answers.groups { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.answer.group { display: flex; flex-direction: column; gap: 2px; border-color: var(--group-soft); }
+.answer.group .group-name { color: var(--group); font-size: 1.15rem; }
+.answer.group .group-hint { font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.answer.group.right .group-name, .answer.group.wrong .group-name { color: inherit; }
+.group-toggle { display: block; margin: 0 0 12px; padding: 0 4px; }
+.tips h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.tips ol { margin: 0; padding-left: 1.3em; }
+.tips li { margin: 6px 0; }
+@media (max-width: 560px) {
+  .answers.groups { grid-template-columns: repeat(2, 1fr); }
+}

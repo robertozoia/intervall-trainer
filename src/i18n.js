@@ -35,6 +35,22 @@ const TEXTS = {
     correctKeys: 'Die richtigen Tasten sind markiert.',
 
     listenQuestion: 'Hör gut zu: Welches Intervall war das?',
+    groupQuestion: 'Hör gut zu: Wie klingt es?',
+    exactQuestion: 'Und welches Intervall genau?',
+    groupMode: 'Erst die Klangfarbe wählen',
+    group_rau: 'rau',
+    group_suess: 'süß',
+    group_hohl: 'hohl',
+    group_gespannt: 'gespannt',
+    groupHint_rau: 'die Töne reiben sich',
+    groupHint_suess: 'weich und angenehm',
+    groupHint_hohl: 'leer, rein, offen',
+    groupHint_gespannt: 'unruhig, will weiter',
+    tipsTitle: 'So erkennst du Intervalle beim Hören',
+    tipSongs: 'Merklied: Welches Lied fängt genau so an? Für aufwärts und abwärts gibt es eigene Lieder.',
+    tipColour: 'Klangfarbe: rau (Sekunde, Septime) · süß (Terz, Sexte) · hohl (Quarte, Quinte, Oktave) · gespannt (Tritonus). Danach: eng oder weit?',
+    tipSing: 'Singen und zählen: Sing den ersten Ton, dann die Tonleiter hoch, und zähl die Stufen bis zum zweiten Ton.',
+    tipDaily: 'Jeden Tag 5–10 Minuten. Fang mit wenigen Intervallen an (Terz, Quinte, Oktave) und nimm langsam mehr dazu.',
     again: '▶ Nochmal',
     activeIntervals: 'Intervalle zum Üben',
 
@@ -115,6 +131,22 @@ const TEXTS = {
     correctKeys: 'Las teclas correctas están marcadas.',
 
     listenQuestion: 'Escucha bien: ¿qué intervalo era?',
+    groupQuestion: 'Escucha bien: ¿cómo suena?',
+    exactQuestion: '¿Y qué intervalo exactamente?',
+    groupMode: 'Primero elegir el color del sonido',
+    group_rau: 'áspero',
+    group_suess: 'dulce',
+    group_hohl: 'hueco',
+    group_gespannt: 'tenso',
+    groupHint_rau: 'las notas chocan',
+    groupHint_suess: 'suave y agradable',
+    groupHint_hohl: 'vacío, limpio, abierto',
+    groupHint_gespannt: 'inquieto, quiere seguir',
+    tipsTitle: 'Cómo reconocer intervalos de oído',
+    tipSongs: 'Canción de referencia: ¿qué canción empieza exactamente así? Hay canciones distintas para subir y para bajar.',
+    tipColour: 'Color del sonido: áspero (Sekunde, Septime) · dulce (Terz, Sexte) · hueco (Quarte, Quinte, Oktave) · tenso (Tritonus). Después: ¿cerca o lejos?',
+    tipSing: 'Cantar y contar: canta la primera nota, sube por la escala y cuenta los escalones hasta la segunda.',
+    tipDaily: 'Cada día 5–10 minutos. Empieza con pocos intervalos (Terz, Quinte, Oktave) y añade más poco a poco.',
     again: '▶ Otra vez',
     activeIntervals: 'Intervalos para practicar',
 
@@ -176,8 +208,22 @@ export const SONGS = {
   oktave: { de: '„Somewhere over the Rainbow“', es: '„Somewhere over the Rainbow“' },
 };
 
+// Sound colour per interval (shown on the Lernen cards and after answering).
+export const COLOURS = {
+  prime: { de: 'derselbe Ton – klingt wie ein einziger', es: 'la misma nota – suena como una sola' },
+  sekunde: { de: 'Nachbartöne, die sich reiben', es: 'notas vecinas que chocan' },
+  terz: { de: 'weich und angenehm – klingt wie ein Akkord', es: 'suave y agradable – suena a acorde' },
+  quarte: { de: 'offen – wie ein Aufbruch, ein Signal', es: 'abierto – como una llamada' },
+  tritonus: { de: 'unruhig – will sich auflösen (Sirene)', es: 'inquieto – quiere resolverse (sirena)' },
+  quinte: { de: 'leer und stabil – wie ein Dudelsack', es: 'vacío y estable – como una gaita' },
+  sexte: { de: 'wie die Terz, aber weiter – sehnsuchtsvoll', es: 'como la Terz, pero más amplia – nostálgica' },
+  septime: { de: 'weit – fast eine Oktave, aber „daneben“', es: 'amplia – casi una Oktave, pero «desafinada»' },
+  oktave: { de: 'derselbe Ton höher – die Töne verschmelzen fast', es: 'la misma nota más aguda – casi se funden' },
+};
+
 let lang = 'de';
 export const setLang = (l) => { lang = TEXTS[l] ? l : 'de'; };
 export const getLang = () => lang;
 export const t = (k) => TEXTS[lang][k] ?? TEXTS.de[k] ?? k;
 export const song = (id) => SONGS[id]?.[lang] ?? '';
+export const colour = (id) => COLOURS[id]?.[lang] ?? '';

@@ -14,6 +14,7 @@ const DEFAULTS = {
   readType: 'melodic', // 'melodic' | 'harmonic' | 'both'
   listenType: 'up', // 'up' | 'down' | 'harmonic' | 'both'
   listenActive: [...INTERVAL_IDS],
+  listenGroups: false, // ask for the sound colour group before the exact interval
 };
 
 function load(key, fallback) {

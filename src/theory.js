@@ -17,6 +17,15 @@ export const INTERVALS = [
   { id: 'oktave', name: 'Oktave', steps: 7, semitones: [12] },
 ];
 export const INTERVAL_IDS = INTERVALS.map((i) => i.id);
+
+// Sound colour groups for ear training: decide the group first, then narrow or wide.
+export const SOUND_GROUPS = [
+  { id: 'rau', members: ['sekunde', 'septime'] },
+  { id: 'suess', members: ['terz', 'sexte'] },
+  { id: 'hohl', members: ['prime', 'quarte', 'quinte', 'oktave'] },
+  { id: 'gespannt', members: ['tritonus'] },
+];
+export const groupOf = (id) => SOUND_GROUPS.find((g) => g.members.includes(id));
 export const intervalById = (id) => INTERVALS.find((i) => i.id === id);
 
 // Key signatures: accidental per step.
