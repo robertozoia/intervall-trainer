@@ -6,6 +6,8 @@ Kleine Web-App zum Üben von Intervallen (Prime, Sekunde, Terz, Quarte, Tritonus
 
 - **Lernen** – alle Intervalle mit Notenbeispiel, Klang und Merklied
 - **Noten lesen** – markiertes Intervall in einer Melodie benennen und auf dem Klavier spielen
+  - *Stufe 1*: Viertelnoten in einem Takt
+  - *Stufe 2*: Taktarten, Rhythmen (Achtel, Halbe, punktierte Noten), Pausen, Hilfslinien (A3–C6), Tonarten bis 3 ♯/♭ und Vorzeichen
 - **Hören** – gespieltes Intervall am Klang erkennen
 - **Prüfung** – 10 gemischte Aufgaben mit Punkten
 - **Statistik** – Trefferquote pro Intervall; schwierige Intervalle kommen öfter dran

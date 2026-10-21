@@ -1,9 +1,9 @@
 // "Noten lesen": name the marked interval in a melody, then play it on the piano.
-import { generateMelody, intervalById, countSteps, midi, checkPlayed, germanName, germanNameForMidi, rand } from '../theory.js';
+import { generateMelody, intervalById, countSteps, midi, checkPlayed, germanName, germanNameForMidi, rand, LEVEL2_KEYS } from '../theory.js';
 import { renderStaff, setPlaying } from '../notation.js';
 import { playSequence, playInterval } from '../audio.js';
 import { createPiano } from '../piano.js';
-import { settings, record, pickInterval } from '../stats.js';
+import { settings, saveSettings, record, pickInterval } from '../stats.js';
 import { t } from '../i18n.js';
 import { h, answerButtons } from '../ui.js';
 
@@ -12,8 +12,9 @@ let lastId = null;
 export function newReadQuestion() {
   const id = pickInterval('read', undefined, lastId);
   lastId = id;
-  const key = settings.keys === 'mixed' ? rand(['C', 'C', 'G', 'F', 'D']) : 'C';
   const harmonic = settings.readType === 'both' ? Math.random() < 0.5 : settings.readType === 'harmonic';
+  if (settings.level === 2) return generateMelody({ id, key: rand(LEVEL2_KEYS), harmonic, chromatic: true, level: 2 });
+  const key = settings.keys === 'mixed' ? rand(['C', 'C', 'G', 'F', 'D']) : 'C';
   return generateMelody({ id, key, harmonic, chromatic: settings.chromatic });
 }
 
@@ -66,10 +67,12 @@ export function renderReadQuestion(container, { onDone, q = newReadQuestion(), n
     stepB,
     h('div', { class: 'row end' }, nextBtn),
   );
-  const { notes, svg } = renderStaff(staffBox, { items: q.items, marked: q.marked, key: q.key });
+  const { notes, svg } = renderStaff(staffBox, {
+    items: q.items, marked: q.marked, key: q.key, durations: q.durations, timeSig: q.timeSig,
+  });
 
   melodyBtn.onclick = () =>
-    playSequence(q.items.map((it) => it.map(midi)), { onStep: (i) => setPlaying(svg, notes, i) });
+    playSequence(q.items.map((it) => it.map(midi)), { durations: q.durations, onStep: (i) => setPlaying(svg, notes, i) });
   intervalBtn.onclick = () => playInterval(targetMidis, q.harmonic ? 'harmonic' : 'melodic');
 
   // Step b: play it on the piano
@@ -91,6 +94,7 @@ export function renderReadQuestion(container, { onDone, q = newReadQuestion(), n
   };
 
   const piano = createPiano(pianoBox, {
+    low: q.level === 2 ? 57 : 60,
     onPress: (m) => {
       if (result.playOk !== null) return;
       if (played.length === 2) played.shift();
@@ -129,9 +133,28 @@ export function renderReadQuestion(container, { onDone, q = newReadQuestion(), n
   return result;
 }
 
+// Stufe 1 / Stufe 2 switch, shared by "Noten lesen" and "Prüfung".
+export function levelSwitch(onChange) {
+  const wrap = h('div', { class: 'level-switch', role: 'group' });
+  const render = () => wrap.replaceChildren(...[1, 2].map((level) => h('button', {
+    type: 'button',
+    class: settings.level === level ? 'active' : '',
+    'aria-pressed': settings.level === level ? 'true' : 'false',
+    onclick: () => {
+      if (settings.level === level) return;
+      settings.level = level;
+      saveSettings();
+      render();
+      onChange?.();
+    },
+  }, t(`level${level}`))));
+  render();
+  return h('div', { class: 'level-row' }, wrap, h('span', { class: 'muted level-hint' }, t(`level${settings.level}Hint`)));
+}
+
 export function mountRead(container) {
   const card = h('div', { class: 'card' });
-  container.replaceChildren(card);
+  container.replaceChildren(levelSwitch(() => mountRead(container)), card);
   const next = () => {
     renderReadQuestion(card, { onDone: next });
     window.scrollTo({ top: 0, behavior: 'smooth' });

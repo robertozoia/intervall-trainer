@@ -1,6 +1,6 @@
 // "Prüfung": 10 mixed questions (5 read + play, 5 by ear), then a score.
 import { intervalById } from '../theory.js';
-import { renderReadQuestion } from './read.js';
+import { renderReadQuestion, levelSwitch } from './read.js';
 import { renderListenQuestion } from './listen.js';
 import { t } from '../i18n.js';
 import { h } from '../ui.js';
@@ -15,6 +15,7 @@ export function mountExam(container) {
   function showIntro() {
     card.replaceChildren(
       h('p', { class: 'prompt' }, t('examIntro')),
+      levelSwitch(showIntro),
       h('div', { class: 'row center' }, h('button', { type: 'button', class: 'primary', onclick: start }, t('examStart'))),
     );
   }

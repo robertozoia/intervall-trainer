@@ -1,53 +1,114 @@
 // Staff rendering with VexFlow (global `Vex` from vendor/vexflow.min.js).
-import { vfKey } from './theory.js';
+import { vfKey, KEYS, TIME_SIGNATURES } from './theory.js';
 
 const MARK = '#e8590c';
 const SVG_NS = 'http://www.w3.org/2000/svg';
+// duration in eighths → VexFlow duration and dots
+const DURATIONS = { 1: ['8', 0], 2: ['q', 0], 3: ['q', 1], 4: ['h', 0], 6: ['h', 1] };
 
-// items: array of arrays of notes; marked: indexes of items to highlight with a bracket.
-export function renderStaff(container, { items, marked = [], key = 'C', width, height = 150 } = {}) {
+// Split item indexes into bars (one bar when there is no time signature).
+function splitBars(durations, timeSig) {
+  if (!timeSig) return [durations.map((_, i) => i)];
+  const size = TIME_SIGNATURES[timeSig];
+  const bars = [];
+  let pos = 0;
+  durations.forEach((d, i) => {
+    const b = Math.floor(pos / size);
+    (bars[b] ??= []).push(i);
+    pos += d;
+  });
+  return bars;
+}
+
+// Accidentals as written by hand: compared with the key signature, reset at every bar line.
+function addAccidentals(VF, note, chord, current, key) {
+  chord.forEach((n, k) => {
+    const id = `${n.step}/${n.oct}`;
+    const expected = current.get(id) ?? KEYS[key][n.step] ?? 0;
+    if (n.acc !== expected) {
+      note.addModifier(new VF.Accidental(n.acc > 0 ? '#' : n.acc < 0 ? 'b' : 'n'), k);
+      current.set(id, n.acc);
+    }
+  });
+}
+
+// items: array of arrays of notes ([] = rest); marked: indexes of items to highlight with a bracket.
+// durations (in eighths) and timeSig are optional: without them every item is a quarter note in one bar.
+export function renderStaff(container, { items, marked = [], key = 'C', durations, timeSig, width, height = 150 } = {}) {
   const VF = Vex.Flow;
   container.innerHTML = '';
-  width = width ?? Math.max(220, 120 + items.length * 62);
+  durations = durations ?? items.map(() => 2);
+  const bars = splitBars(durations, timeSig);
+  const keyWidth = Object.keys(KEYS[key]).length * 11;
+  const headWidth = 50 + keyWidth + (timeSig ? 26 : 0);
+  const barWidths = bars.map((bar, b) => (b === 0 ? headWidth : 14) + bar.length * 44 + 16);
+  width = width ?? Math.max(220, barWidths.reduce((a, w) => a + w, 0) + 12);
+  // stretch bars to the requested width
+  const scale = (width - 12) / barWidths.reduce((a, w) => a + w, 0);
+
   const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
   renderer.resize(width, height);
   const ctx = renderer.getContext();
-  const stave = new VF.Stave(6, 22, width - 12);
-  stave.addClef('treble');
-  if (key !== 'C') stave.addKeySignature(key);
-  stave.setContext(ctx).draw();
 
-  const notes = items.map((chord, i) => {
-    const n = new VF.StaveNote({ keys: chord.map(vfKey), duration: 'q', auto_stem: true });
-    if (marked.includes(i)) n.setStyle({ fillStyle: MARK, strokeStyle: MARK });
-    return n;
+  const notes = [];
+  let x = 6;
+  bars.forEach((bar, b) => {
+    const w = barWidths[b] * scale;
+    const stave = new VF.Stave(x, 22, w);
+    if (b === 0) {
+      stave.addClef('treble');
+      if (key !== 'C') stave.addKeySignature(key);
+      if (timeSig) stave.addTimeSignature(timeSig);
+    }
+    if (timeSig && b === bars.length - 1) stave.setEndBarType(VF.Barline.type.END);
+    stave.setContext(ctx).draw();
+
+    const current = new Map();
+    const barNotes = bar.map((i) => {
+      const chord = items[i];
+      const [dur, dots] = DURATIONS[durations[i]];
+      const rest = chord.length === 0;
+      const n = new VF.StaveNote({
+        keys: rest ? ['b/4'] : chord.map(vfKey),
+        duration: dur + (rest ? 'r' : ''),
+        dots,
+        auto_stem: !rest,
+      });
+      if (dots) VF.Dot.buildAndAttach([n], { all: true });
+      if (!rest) addAccidentals(VF, n, chord, current, key);
+      if (marked.includes(i)) n.setStyle({ fillStyle: MARK, strokeStyle: MARK });
+      notes[i] = n;
+      return n;
+    });
+    marked.forEach((i) => notes[i]?.getModifiers().forEach((m) => m.setStyle?.({ fillStyle: MARK, strokeStyle: MARK })));
+
+    const beats = bar.reduce((a, i) => a + durations[i], 0);
+    const voice = new VF.Voice({ num_beats: beats, beat_value: 8 });
+    voice.addTickables(barNotes);
+    const beams = timeSig ? VF.Beam.generateBeams(barNotes.filter((n) => !n.isRest())) : [];
+    new VF.Formatter().joinVoices([voice]).format([voice], w - (stave.getNoteStartX() - x) - 20);
+    voice.draw(ctx, stave);
+    beams.forEach((beam) => beam.setContext(ctx).draw());
+    x += w;
   });
-  const voice = new VF.Voice({ num_beats: notes.length, beat_value: 4 });
-  voice.addTickables(notes);
-  VF.Accidental.applyAccidentals([voice], key);
-  // Re-colour accidentals added after styling.
-  notes.forEach((n, i) => {
-    if (marked.includes(i)) n.getModifiers().forEach((m) => m.setStyle?.({ fillStyle: MARK, strokeStyle: MARK }));
-  });
-  new VF.Formatter().joinVoices([voice]).format([voice], width - (stave.getNoteStartX() - 6) - 30);
-  voice.draw(ctx, stave);
 
   const svg = container.querySelector('svg');
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.removeAttribute('width');
   svg.removeAttribute('height');
-  svg.removeAttribute('style');
+  // keep note heads readable on phones: scroll sideways instead of shrinking too far
+  svg.setAttribute('style', `min-width: ${Math.round(width * 0.75)}px`);
   svg.classList.add('staff-svg');
 
-  if (marked.length) drawBracket(svg, marked.map((i) => notes[i]), stave);
+  if (marked.length) drawBracket(svg, marked.map((i) => notes[i]));
   return { notes, svg };
 }
 
-function drawBracket(svg, notes, stave) {
+function drawBracket(svg, notes) {
   const boxes = notes.map((n) => n.getBoundingBox());
   const x1 = Math.min(...boxes.map((b) => b.getX())) - 6;
   const x2 = Math.max(...boxes.map((b) => b.getX() + b.getW())) + 6;
-  const top = Math.min(stave.getYForLine(0) - 8, ...boxes.map((b) => b.getY() - 6));
+  const top = Math.min(notes[0].getStave().getYForLine(0) - 8, ...boxes.map((b) => b.getY() - 6));
   const y = Math.max(4, top);
   const path = document.createElementNS(SVG_NS, 'path');
   path.setAttribute('d', `M${x1} ${y + 8} L${x1} ${y} L${x2} ${y} L${x2} ${y + 8}`);

@@ -8,7 +8,8 @@ const DEFAULTS = {
   lang: 'de',
   labels: true,
   checkMode: 'exact', // 'exact' | 'interval'
-  keys: 'C', // 'C' | 'mixed'
+  level: 1, // score difficulty for "Noten lesen" and "Prüfung": 1 | 2
+  keys: 'C', // 'C' | 'mixed' (level 1)
   chromatic: false,
   readType: 'melodic', // 'melodic' | 'harmonic' | 'both'
   listenType: 'up', // 'up' | 'down' | 'harmonic' | 'both'

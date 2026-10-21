@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   note, midi, classify, isClean, categoryFromSemitones, germanName, cleanPairs,
-  generateMelody, checkPlayed, countSteps, INTERVAL_IDS, KEYS, dia,
+  generateMelody, checkPlayed, countSteps, INTERVAL_IDS, KEYS, dia, LEVEL2_KEYS, TIME_SIGNATURES,
 } from '../src/theory.js';
 
 const C4 = note(0, 0, 4), D4 = note(1, 0, 4), E4 = note(2, 0, 4), F4 = note(3, 0, 4),
@@ -82,6 +82,33 @@ test('generated melodies contain the marked interval inside the range', () => {
     assert.equal(classify(notes[0], notes[1]), id);
     assert.ok(isClean(notes[0], notes[1]));
     for (const it of m.items) for (const n of it) assert.ok(dia(n) >= 28 && dia(n) <= 40);
+  }
+});
+
+test('level 2 melodies: full bars, rests never marked, range A3..C6, no odd spellings', () => {
+  for (let i = 0; i < 500; i++) {
+    const id = INTERVAL_IDS[i % INTERVAL_IDS.length];
+    const harmonic = i % 3 === 0 && id !== 'prime';
+    const key = LEVEL2_KEYS[i % LEVEL2_KEYS.length];
+    const m = generateMelody({ id, key, harmonic, level: 2 });
+    const bar = TIME_SIGNATURES[m.timeSig];
+    assert.equal(m.durations.length, m.items.length);
+    let pos = 0;
+    for (const d of m.durations) {
+      assert.ok(Math.floor(pos / bar) === Math.floor((pos + d - 1) / bar), 'note crosses a bar line');
+      pos += d;
+    }
+    assert.equal(pos % bar, 0, 'bars are full');
+    for (const k of m.marked) assert.ok(m.items[k].length > 0, 'marked note is not a rest');
+    const notes = m.marked.length === 1 ? m.items[m.marked[0]] : m.marked.map((k) => m.items[k][0]);
+    assert.equal(classify(notes[0], notes[1]), id);
+    assert.ok(isClean(notes[0], notes[1]));
+    for (const it of m.items) {
+      for (const n of it) {
+        assert.ok(dia(n) >= 26 && dia(n) <= 42);
+        assert.ok(!['E#', 'H#', 'Fb', 'Cb'].includes(['C', 'D', 'E', 'F', 'G', 'A', 'H'][n.step] + (n.acc > 0 ? '#' : n.acc < 0 ? 'b' : '')));
+      }
+    }
   }
 });
 

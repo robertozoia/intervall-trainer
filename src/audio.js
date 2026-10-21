@@ -48,15 +48,17 @@ export async function playInterval(midis, mode = 'melodic') {
   }
 }
 
-// items: array of arrays of midi numbers; onStep(index) is called when each item sounds.
-export async function playSequence(items, { tempo = 0.55, onStep } = {}) {
+// items: array of arrays of midi numbers ([] = rest); durations in eighths (default: quarters);
+// onStep(index) is called when each item sounds.
+export async function playSequence(items, { tempo = 0.55, durations, onStep } = {}) {
   const token = await prepare();
   const now = Tone.now() + 0.05;
+  let at = 0;
   items.forEach((chord, i) => {
-    sampler.triggerAttackRelease(chord.map(toNote), tempo * 1.4, now + i * tempo);
-    if (onStep) {
-      setTimeout(() => token === playToken && onStep(i), (0.05 + i * tempo) * 1000);
-    }
+    const len = ((durations?.[i] ?? 2) / 2) * tempo;
+    if (chord.length) sampler.triggerAttackRelease(chord.map(toNote), len * 1.3, now + at);
+    if (onStep) setTimeout(() => token === playToken && onStep(i), (0.05 + at) * 1000);
+    at += len;
   });
-  if (onStep) setTimeout(() => token === playToken && onStep(-1), (0.05 + items.length * tempo) * 1000);
+  if (onStep) setTimeout(() => token === playToken && onStep(-1), (0.05 + at) * 1000);
 }

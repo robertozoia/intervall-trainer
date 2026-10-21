@@ -25,7 +25,16 @@ export const KEYS = {
   G: { 3: 1 },
   F: { 6: -1 },
   D: { 3: 1, 0: 1 },
+  A: { 3: 1, 0: 1, 4: 1 },
+  Bb: { 6: -1, 2: -1 },
+  Eb: { 6: -1, 2: -1, 5: -1 },
 };
+export const LEVEL1_KEYS = ['C', 'G', 'F', 'D'];
+export const LEVEL2_KEYS = Object.keys(KEYS);
+
+// Spellings a beginner never meets (Eis, His, Fes, Ces).
+const ODD = new Set(['2:1', '6:1', '3:-1', '0:-1']);
+const isOdd = (n) => ODD.has(`${n.step}:${n.acc}`);
 
 export const note = (step, acc, oct) => ({ step, acc, oct });
 export const dia = (n) => n.oct * 7 + n.step;
@@ -87,7 +96,8 @@ export function noteCandidates(key, loDia, hiDia, chromatic = false) {
     out.push({ n: fromDia(d, keyAcc), chromatic: false });
     if (chromatic) {
       for (const acc of [keyAcc - 1, keyAcc + 1]) {
-        if (Math.abs(acc) <= 1) out.push({ n: fromDia(d, acc), chromatic: true });
+        const n = fromDia(d, acc);
+        if (Math.abs(acc) <= 1 && !isOdd(n)) out.push({ n, chromatic: true });
       }
     }
   }
@@ -124,8 +134,13 @@ export function randomPair(id, opts = {}) {
 }
 
 // A short melody (array of items; each item is an array of notes, two notes = chord) with a marked interval.
-export function generateMelody({ id, key = 'C', harmonic = false, chromatic = false, loDia = 28, hiDia = 40 }) {
-  if (harmonic && id === 'prime') harmonic = false;
+// Level 1: quarter notes only. Level 2: bars, rhythms, rests, ledger lines and bigger leaps.
+export function generateMelody(opts) {
+  if (opts.harmonic && opts.id === 'prime') opts = { ...opts, harmonic: false };
+  return opts.level === 2 ? generateMelody2(opts) : generateMelody1(opts);
+}
+
+function generateMelody1({ id, key = 'C', harmonic = false, chromatic = false, loDia = 28, hiDia = 40 }) {
   const opts = { key, loDia, hiDia, chromatic, direction: harmonic ? 'up' : 'any' };
   const pair = randomPair(id, opts);
   const len = randInt(6, 8);
@@ -148,6 +163,86 @@ export function generateMelody({ id, key = 'C', harmonic = false, chromatic = fa
   const items = [...before, ...middle, ...after];
   const marked = harmonic ? [pos] : [pos, pos + 1];
   return { items, marked, pair, id, harmonic, key };
+}
+
+// Durations are counted in eighths: 1 = eighth, 2 = quarter, 3 = dotted quarter, 4 = half, 6 = dotted half.
+export const TIME_SIGNATURES = { '4/4': 8, '3/4': 6, '2/4': 4 };
+const BARS = { '4/4': 2, '3/4': 3, '2/4': 3 };
+export const LEVEL2_RANGE = { loDia: 26, hiDia: 42 }; // A3 .. C6
+
+function rhythmBar(eighths, last) {
+  const out = [];
+  let left = last ? eighths - (eighths === 6 && Math.random() < 0.5 ? 6 : 4) : eighths;
+  while (left > 0) {
+    if (left >= 4 && Math.random() < 0.3) {
+      out.push(...rand([[4], [3, 1]]));
+      left -= 4;
+    } else {
+      out.push(...rand([[2], [2], [1, 1]]));
+      left -= 2;
+    }
+  }
+  if (last) out.push(eighths - out.reduce((a, b) => a + b, 0));
+  return out;
+}
+
+// Rhythm skeleton: slots { dur, rest } over 2–3 bars; occasional quarter rests, never first or last.
+export function generateRhythm(timeSig) {
+  const eighths = TIME_SIGNATURES[timeSig];
+  const bars = BARS[timeSig];
+  const slots = [];
+  for (let b = 0; b < bars; b++) {
+    for (const dur of rhythmBar(eighths, b === bars - 1)) slots.push({ dur, rest: false });
+  }
+  slots.forEach((s, i) => {
+    if (i > 0 && i < slots.length - 1 && s.dur === 2 && Math.random() < 0.12) s.rest = true;
+  });
+  return slots;
+}
+
+function generateMelody2({ id, key = 'C', harmonic = false, chromatic = true }) {
+  const { loDia, hiDia } = LEVEL2_RANGE;
+  const timeSig = rand(Object.keys(TIME_SIGNATURES));
+  const slots = generateRhythm(timeSig);
+  const span = harmonic ? 1 : 2;
+  const starts = [];
+  for (let k = 0; k + span <= slots.length; k++) {
+    // a chord is never an eighth note, so it stands out on its own
+    if (slots.slice(k, k + span).every((s) => !s.rest) && (!harmonic || slots[k].dur >= 2)) starts.push(k);
+  }
+  const pos = rand(starts);
+  const pair = randomPair(id, { key, loDia, hiDia, chromatic, direction: harmonic ? 'up' : 'any' });
+
+  const keyAcc = (d) => KEYS[key][((d % 7) + 7) % 7] ?? 0;
+  const pitch = (d) => {
+    let n = fromDia(d, keyAcc(d));
+    if (chromatic && Math.random() < 0.12) {
+      const alt = fromDia(d, keyAcc(d) + rand([-1, 1]));
+      if (Math.abs(alt.acc) <= 1 && !isOdd(alt)) n = alt;
+    }
+    return n;
+  };
+  const items = slots.map(() => []);
+  const fill = (from, indexes) => {
+    let d = dia(from);
+    for (const i of indexes) {
+      if (slots[i].rest) continue;
+      const options = [-5, -4, -3, -2, -1, 1, 2, 2, 3, 4, 5, -2, -1, 1].map((s) => d + s).filter((x) => x >= loDia && x <= hiDia);
+      d = rand(options);
+      items[i] = [pitch(d)];
+    }
+  };
+  if (harmonic) items[pos] = [pair[0], pair[1]];
+  else [items[pos], items[pos + 1]] = [[pair[0]], [pair[1]]];
+  const before = [];
+  for (let i = pos - 1; i >= 0; i--) before.push(i);
+  const after = [];
+  for (let i = pos + span; i < slots.length; i++) after.push(i);
+  fill(pair[0], before);
+  fill(pair[1], after);
+
+  const marked = harmonic ? [pos] : [pos, pos + 1];
+  return { items, marked, pair, id, harmonic, key, timeSig, durations: slots.map((s) => s.dur), level: 2 };
 }
 
 // Steps between two written notes, low to high, for the explanation ("C 1, D 2, E 3 → Terz").

@@ -94,7 +94,7 @@ main {
 .prompt { font-weight: 600; margin: 0 0 10px; }
 .muted { color: var(--muted); }
 
-.staff { background: #fff; border-radius: 10px; margin: 6px 0 14px; }
+.staff { background: #fff; border-radius: 10px; margin: 6px 0 14px; overflow-x: auto; }
 .staff-svg { display: block; width: 100%; height: auto; max-height: 240px; }
 .staff.small .staff-svg { max-width: 300px; margin: 0 auto; }
 .staff-svg .playing path,
@@ -191,6 +191,21 @@ button:disabled { opacity: 0.45; cursor: default; }
 .learn-card p { margin: 4px 0; }
 .learn-card .row button { padding: 8px 12px; font-size: 0.9rem; }
 .song { font-size: 0.95rem; }
+
+/* Level switch */
+.level-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 12px; }
+.level-switch { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.level-switch button {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.level-switch button.active { background: var(--accent); color: var(--accent-ink); }
+.level-hint { font-size: 0.85rem; }
 
 /* Listen filter */
 .filter { background: var(--card); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }

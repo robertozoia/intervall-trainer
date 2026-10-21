@@ -1,9 +1,8 @@
-// On-screen piano keyboard (C4–C6), touch, mouse and computer keyboard.
+// On-screen piano keyboard (C4–C6, or from A3 for level 2), touch, mouse and computer keyboard.
 import { germanNameForMidi } from './theory.js';
 import { playKey } from './audio.js';
 import { settings } from './stats.js';
 
-const LOW = 60;
 const HIGH = 84;
 const BLACK = new Set([1, 3, 6, 8, 10]);
 // Computer keys (works for QWERTZ and QWERTY): white row a s d f …, black row w e t z/y u o p.
@@ -25,15 +24,15 @@ document.addEventListener('keydown', (ev) => {
   }
 });
 
-export function createPiano(container, { onPress } = {}) {
+export function createPiano(container, { onPress, low = 60 } = {}) {
   const el = document.createElement('div');
   el.className = 'piano';
   const keys = new Map();
   const whites = [];
-  for (let m = LOW; m <= HIGH; m++) if (!BLACK.has(m % 12)) whites.push(m);
+  for (let m = low; m <= HIGH; m++) if (!BLACK.has(m % 12)) whites.push(m);
   const whiteW = 100 / whites.length;
 
-  for (let m = LOW; m <= HIGH; m++) {
+  for (let m = low; m <= HIGH; m++) {
     const black = BLACK.has(m % 12);
     const k = document.createElement('button');
     k.type = 'button';
